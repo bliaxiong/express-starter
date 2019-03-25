@@ -3,22 +3,21 @@ const validator = require('validator')
 const async = require('neo-async')
 const request = require('request')
 const _ = require('lodash')
-const secrets = require('../config/secrets')
+const graph = require('fbgraph')
+const cheerio = require('cheerio')
+const Github = require('github-api')
+const LastFmNode = require('lastfm').LastFmNode
+const Twit = require('twit')
+const stripe = require('stripe')(secrets.stripe.secretKey)
+const twilio = require('twilio')(secrets.twilio.sid, secrets.twilio.token)
+const Linkedin = require('node-linkedin')(secrets.linkedin.clientID, secrets.linkedin.clientSecret, secrets.linkedin.callbackURL)
+const Y = require('yui/yql')
+const paypal = require('paypal-rest-sdk')
+const BitGo = require('bitgo')
+const clockwork = require('clockwork')({ key: secrets.clockwork.apiKey })
+const lob = require('lob')(secrets.lob.apiKey)
 
-// specific requires
-let cheerio
-let graph
-let LastFmNode
-let Github
-let Twit
-let stripe
-let twilio
-let Linkedin
-let BitGo
-let clockwork
-let paypal
-let lob
-let Y
+const secrets = require('../config/secrets')
 
 /**
  * GET /api
@@ -35,8 +34,6 @@ exports.getApi = (req, res) => {
  * Facebook API example.
  */
 exports.getFacebook = (req, res, next) => {
-  graph = require('fbgraph')
-
   const token = req.user.tokens.facebook
   graph.setAccessToken(token)
   async.parallel({
@@ -51,14 +48,14 @@ exports.getFacebook = (req, res, next) => {
       })
     },
   },
-  (err, results) => {
-    if (err) return next(err)
-    res.render('api/facebook', {
-      title: 'Facebook API',
-      me: results.getMe,
-      friends: results.getMyFriends,
+    (err, results) => {
+      if (err) return next(err)
+      res.render('api/facebook', {
+        title: 'Facebook API',
+        me: results.getMe,
+        friends: results.getMyFriends,
+      })
     })
-  })
 }
 
 /**
@@ -66,8 +63,6 @@ exports.getFacebook = (req, res, next) => {
  * Web scraping example using Cheerio library.
  */
 exports.getScraping = (req, res, next) => {
-  cheerio = require('cheerio')
-
   request.get('https://news.ycombinator.com/', (err, reqInner, body) => {
     if (err) return next(err)
     const $ = cheerio.load(body)
@@ -87,8 +82,6 @@ exports.getScraping = (req, res, next) => {
  * GitHub API Example.
  */
 exports.getGithub = (req, res, next) => {
-  Github = require('github-api')
-
   const token = req.user.tokens.github
   const github = new Github({ token })
   const repo = github.getRepo('sahat', 'requirejs-library')
@@ -134,8 +127,6 @@ exports.getNewYorkTimes = (req, res, next) => {
  * Last.fm API example.
  */
 exports.getLastfm = (req, res, next) => {
-  LastFmNode = require('lastfm').LastFmNode
-
   const lastfm = new LastFmNode(secrets.lastfm)
   async.parallel({
     artistInfo(done) {
@@ -186,23 +177,23 @@ exports.getLastfm = (req, res, next) => {
       })
     },
   },
-  (err, results) => {
-    if (err) return next(err.error.message)
-    const artist = {
-      name: results.artistInfo.artist.name,
-      image: results.artistInfo.artist.image.slice(-1)[0]['#text'],
-      tags: results.artistInfo.artist.tags.tag,
-      bio: results.artistInfo.artist.bio.summary,
-      stats: results.artistInfo.artist.stats,
-      similar: results.artistInfo.artist.similar.artist,
-      topAlbums: results.artistTopAlbums,
-      topTracks: results.artistTopTracks,
-    }
-    res.render('api/lastfm', {
-      title: 'Last.fm API',
-      artist,
+    (err, results) => {
+      if (err) return next(err.error.message)
+      const artist = {
+        name: results.artistInfo.artist.name,
+        image: results.artistInfo.artist.image.slice(-1)[0]['#text'],
+        tags: results.artistInfo.artist.tags.tag,
+        bio: results.artistInfo.artist.bio.summary,
+        stats: results.artistInfo.artist.stats,
+        similar: results.artistInfo.artist.similar.artist,
+        topAlbums: results.artistTopAlbums,
+        topTracks: results.artistTopTracks,
+      }
+      res.render('api/lastfm', {
+        title: 'Last.fm API',
+        artist,
+      })
     })
-  })
 }
 
 /**
@@ -210,8 +201,6 @@ exports.getLastfm = (req, res, next) => {
  * Twiter API example.
  */
 exports.getTwitter = (req, res, next) => {
-  Twit = require('twit')
-
   const accessToken = req.user.tokens.twitter
   const secretToken = req.user.tokens.twitterSecret
   const T = new Twit({
@@ -291,15 +280,15 @@ exports.getSteam = (req, res, next) => {
       })
     },
   },
-  (err, results) => {
-    if (err) return next(err)
-    res.render('api/steam', {
-      title: 'Steam Web API',
-      ownedGames: results.ownedGames.response.games,
-      playerAchievemments: results.playerAchievements.playerstats,
-      playerSummary: results.playerSummaries.response.players[0],
+    (err, results) => {
+      if (err) return next(err)
+      res.render('api/steam', {
+        title: 'Steam Web API',
+        ownedGames: results.ownedGames.response.games,
+        playerAchievemments: results.playerAchievements.playerstats,
+        playerSummary: results.playerSummaries.response.players[0],
+      })
     })
-  })
 }
 
 /**
@@ -320,8 +309,6 @@ exports.getStripe = (req, res) => {
  * Make a payment.
  */
 exports.postStripe = (req, res, next) => {
-  stripe = require('stripe')(secrets.stripe.secretKey)
-
   const { stripeToken } = req.body
   const { stripeEmail } = req.body
   stripe.charges.create({
@@ -354,7 +341,6 @@ exports.getTwilio = (req, res) => {
  * Send a text message using Twilio.
  */
 exports.postTwilio = (req, res, next) => {
-  twilio = require('twilio')(secrets.twilio.sid, secrets.twilio.token)
 
   req.assert('number', 'Phone number is required.').notEmpty()
   req.assert('message', 'Message cannot be blank.').notEmpty()
@@ -390,8 +376,6 @@ exports.getClockwork = (req, res) => {
  * Send a text message using Clockwork SMS
  */
 exports.postClockwork = (req, res, next) => {
-  clockwork = require('clockwork')({ key: secrets.clockwork.apiKey })
-
   const message = {
     To: req.body.telephone,
     From: 'Hackathon',
@@ -423,14 +407,14 @@ exports.getVenmo = (req, res, next) => {
       })
     },
   },
-  (err, results) => {
-    if (err) return next(err)
-    res.render('api/venmo', {
-      title: 'Venmo API',
-      profile: results.getProfile.data,
-      recentPayments: results.getRecentPayments.data,
+    (err, results) => {
+      if (err) return next(err)
+      res.render('api/venmo', {
+        title: 'Venmo API',
+        profile: results.getProfile.data,
+        recentPayments: results.getRecentPayments.data,
+      })
     })
-  })
 }
 
 /**
@@ -476,8 +460,6 @@ exports.postVenmo = (req, res, next) => {
  * LinkedIn API example.
  */
 exports.getLinkedin = (req, res, next) => {
-  Linkedin = require('node-linkedin')(secrets.linkedin.clientID, secrets.linkedin.clientSecret, secrets.linkedin.callbackURL)
-
   const token = req.user.tokens.linkedin
   const linkedin = Linkedin.init(token)
   linkedin.people.me((err, $in) => {
@@ -494,7 +476,6 @@ exports.getLinkedin = (req, res, next) => {
  * Yahoo API example.
  */
 exports.getYahoo = (req, res) => {
-  Y = require('yui/yql')
 
   Y.YQL('SELECT * FROM weather.forecast WHERE (location = 10007)', (response) => {
     const { location } = response.query.results.channel
@@ -512,8 +493,6 @@ exports.getYahoo = (req, res) => {
  * PayPal SDK example.
  */
 exports.getPayPal = (req, res, next) => {
-  paypal = require('paypal-rest-sdk')
-
   paypal.configure({
     mode: 'sandbox',
     client_id: secrets.paypal.client_id,
@@ -595,8 +574,6 @@ exports.getPayPalCancel = (req, res) => {
  * Lob API example.
  */
 exports.getLob = (req, res, next) => {
-  lob = require('lob')(secrets.lob.apiKey)
-
   lob.routes.list({
     zip_codes: ['10007'],
   }, (err, routes) => {
@@ -613,8 +590,6 @@ exports.getLob = (req, res, next) => {
  * BitGo wallet example
  */
 exports.getBitGo = (req, res, next) => {
-  BitGo = require('bitgo')
-
   const bitgo = new BitGo.BitGo({ env: 'test', accessToken: secrets.bitgo.accessToken })
   const { walletId } = req.session // we use the session to store the walletid, but you should store it elsewhere
   const walletParameters = ['id', 'label', 'permissions', 'balance', 'confirmedBalance', 'unconfirmedSends', 'unconfirmedReceives']
@@ -679,7 +654,7 @@ exports.postBitGo = (req, res, next) => {
         },
       )
     })
-  } catch (e) {
+  } catch e {
     req.flash('errors', { msg: e.message })
     return res.redirect('/api/bitgo')
   }

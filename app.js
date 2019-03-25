@@ -1,8 +1,7 @@
 /**
  * Module dependencies.
  */
-// var toobusy = require('toobusy-js')
-const http2 = require('spdy')
+const toobusy = require('toobusy-js')
 const express = require('express')
 require('dotenv').config()
 const cookieParser = require('cookie-parser')
@@ -47,13 +46,13 @@ const passportConf = require('./config/passport')
 const app = express()
 
 /* Avoid not responsing when server load is huge */
-// app.use(function(req, res, next) {
-//   if (toobusy()) {
-//     res.status(503).send("I'm busy right now, sorry. Please try again later.")
-//   } else {
-//     next()
-//   }
-// })
+app.use(function (req, res, next) {
+  if (toobusy()) {
+    res.status(503).send("I'm busy right now, sorry. Please try again later.")
+  } else {
+    next()
+  }
+})
 
 /**
  * Express configuration.
@@ -80,15 +79,27 @@ Promise.longStackTraces()
 
 const db = require('./models/sequelize')
 
-// MySQL Store
-
+/* 
+  MySQL Store Options
+  - The db user, password, and db name should be exported to the env
+*/
 app.use(session({
-  resave: true,
+  resave: false,
   saveUninitialized: true,
   secret: secrets.sessionSecret,
   store: new MySQLStore({
-    config: secrets.mysql,
-    table: secrets.mysql.sessionTable,
+    // config: secrets.mysql,
+    table: sprocess.env.DB_SESSION_TABLE,
+    cookie: {
+      httpOnly: false,
+      secure: false,
+      maxAge: 1000 * 60 * 60 * 24 * 3,
+      expires: 1000 * 60 * 60 * 24 * 3
+    },
+    user: process.env.DB_USER,
+    password: process.env.DB_PASS,
+    database: process.env.DB_NAME,
+    url: process.env.DB_HOST
   }),
 }))
 
