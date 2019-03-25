@@ -1,41 +1,38 @@
-'use strict';
+const passport = require('passport')
+const Promise = require('bluebird')
+const LocalStrategy = require('passport-local').Strategy
+const FacebookStrategy = require('passport-facebook').Strategy
+const TwitterStrategy = require('passport-twitter').Strategy
+const GitHubStrategy = require('passport-github').Strategy
+const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy
+const LinkedInStrategy = require('passport-linkedin-oauth2').Strategy
 
-var passport = require('passport');
-var Promise = require('bluebird');
-var LocalStrategy = require('passport-local').Strategy;
-var FacebookStrategy = require('passport-facebook').Strategy;
-var TwitterStrategy = require('passport-twitter').Strategy;
-var GitHubStrategy = require('passport-github').Strategy;
-var GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
-var LinkedInStrategy = require('passport-linkedin-oauth2').Strategy;
+const secrets = require('./secrets')
+const db = require('../models/sequelize')
+const UserRepo = require('../repositories/UserRepository')
 
-var secrets = require('./secrets');
-var db = require('../models/sequelize');
-var UserRepo = require('../repositories/UserRepository');
+passport.serializeUser((user, done) => {
+  done(null, user.id)
+})
 
-passport.serializeUser(function(user, done) {
-  done(null, user.id);
-});
-
-passport.deserializeUser(function(id, done) {
-  db.User.findById(id).then(function(user) {
-    done(null, user);
-  }).catch(function(error) {
-    done(error);
-  });
-});
+passport.deserializeUser((id, done) => {
+  db.User.findById(id).then((user) => {
+    done(null, user)
+  }).catch((error) => {
+    done(error)
+  })
+})
 
 /**
  * Sign in using Email and Password.
  */
-passport.use(new LocalStrategy({ usernameField: 'email' }, function(email, password, done) {
-  email = email.toLowerCase();
-  db.User.findUser(email, password, function(err, user) {
-    if(err)
-      return done(err, null);
-    return done(null, user);
-  });
-}));
+passport.use(new LocalStrategy({ usernameField: 'email' }, ((email, password, done) => {
+  email = email.toLowerCase()
+  db.User.findUser(email, password, (err, user) => {
+    if (err) { return done(err, null) }
+    return done(null, user)
+  })
+})))
 
 /**
  * OAuth Strategy Overview
@@ -55,125 +52,125 @@ passport.use(new LocalStrategy({ usernameField: 'email' }, function(email, passw
 /**
  * Sign in with Facebook.
  */
-passport.use(new FacebookStrategy(secrets.facebook, function(req, accessToken, refreshToken, profile, done) {
+passport.use(new FacebookStrategy(secrets.facebook, ((req, accessToken, refreshToken, profile, done) => {
   if (req.user) {
     UserRepo.linkFacebookProfile(req.user.id, accessToken, refreshToken, profile)
-      .then(function(user) {
-        req.flash('info', { msg: 'Facebook account has been linked.' });
-        done(null, user);
+      .then((user) => {
+        req.flash('info', { msg: 'Facebook account has been linked.' })
+        done(null, user)
       })
-      .catch(function(err) {
-        req.flash('errors', { msg: err });
-        done(null, false, { message: err });
-      });
+      .catch((err) => {
+        req.flash('errors', { msg: err })
+        done(null, false, { message: err })
+      })
   } else {
     UserRepo.createAccFromFacebook(accessToken, refreshToken, profile)
-      .then(function(user) { done(null, user); })
-      .catch(function(error) { done(error); });
+      .then((user) => { done(null, user) })
+      .catch((error) => { done(error) })
   }
-}));
+})))
 
 /**
  * Sign in with GitHub.
  */
-passport.use(new GitHubStrategy(secrets.github, function(req, accessToken, refreshToken, profile, done) {
+passport.use(new GitHubStrategy(secrets.github, ((req, accessToken, refreshToken, profile, done) => {
   if (req.user) {
     UserRepo.linkGithubProfile(req.user.id, accessToken, refreshToken, profile)
-      .then(function(user) {
-        req.flash('info', { msg: 'GitHub account has been linked.' });
-        done(null, user);
+      .then((user) => {
+        req.flash('info', { msg: 'GitHub account has been linked.' })
+        done(null, user)
       })
-      .catch(function(err) {
-        req.flash('errors', { msg: err });
-        done(null, false, { message: err });
-      });
+      .catch((err) => {
+        req.flash('errors', { msg: err })
+        done(null, false, { message: err })
+      })
   } else {
     UserRepo.createAccFromGithub(accessToken, refreshToken, profile)
-      .then(function(user) { done(null, user); })
-      .catch(function(error) { done(error); });
+      .then((user) => { done(null, user) })
+      .catch((error) => { done(error) })
   }
-}));
+})))
 
 /**
  * Sign in with Twitter.
  */
-passport.use(new TwitterStrategy(secrets.twitter, function(req, accessToken, tokenSecret, profile, done) {
+passport.use(new TwitterStrategy(secrets.twitter, ((req, accessToken, tokenSecret, profile, done) => {
   if (req.user) {
     UserRepo.linkTwitterProfile(req.user.id, accessToken, tokenSecret, profile)
-      .then(function(user) {
-        req.flash('info', { msg: 'Twitter account has been linked.' });
-        done(null, user);
+      .then((user) => {
+        req.flash('info', { msg: 'Twitter account has been linked.' })
+        done(null, user)
       })
-      .catch(function(err) {
-        req.flash('errors', { msg: err });
-        done(null, false, { message: err });
-      });
+      .catch((err) => {
+        req.flash('errors', { msg: err })
+        done(null, false, { message: err })
+      })
   } else {
     UserRepo.createAccFromTwitter(accessToken, tokenSecret, profile)
-      .then(function(user) { done(null, user); })
-      .catch(function(error) { done(error); });
+      .then((user) => { done(null, user) })
+      .catch((error) => { done(error) })
   }
-}));
+})))
 
 /**
  * Sign in with Google.
  */
-passport.use(new GoogleStrategy(secrets.google, function(req, accessToken, refreshToken, profile, done) {
+passport.use(new GoogleStrategy(secrets.google, ((req, accessToken, refreshToken, profile, done) => {
   if (req.user) {
     UserRepo.linkGoogleProfile(req.user.id, accessToken, refreshToken, profile)
-      .then(function(user) {
-        req.flash('info', { msg: 'Google account has been linked.' });
-        done(null, user);
+      .then((user) => {
+        req.flash('info', { msg: 'Google account has been linked.' })
+        done(null, user)
       })
-      .catch(function(err) {
-        req.flash('errors', { msg: err });
-        done(null, false, { message: err });
-      });
+      .catch((err) => {
+        req.flash('errors', { msg: err })
+        done(null, false, { message: err })
+      })
   } else {
     UserRepo.createAccFromGoogle(accessToken, refreshToken, profile)
-      .then(function(user) { done(null, user); })
-      .catch(function(error) { done(error); });
+      .then((user) => { done(null, user) })
+      .catch((error) => { done(error) })
   }
-}));
+})))
 
 /**
  * Sign in with LinkedIn.
  */
-passport.use(new LinkedInStrategy(secrets.linkedin, function(req, accessToken, refreshToken, profile, done) {
+passport.use(new LinkedInStrategy(secrets.linkedin, ((req, accessToken, refreshToken, profile, done) => {
   if (req.user) {
     UserRepo.linkLinkedInProfile(req.user.id, accessToken, refreshToken, profile)
-      .then(function(user) {
-        req.flash('info', { msg: 'LinkedIn account has been linked.' });
-        done(null, user);
+      .then((user) => {
+        req.flash('info', { msg: 'LinkedIn account has been linked.' })
+        done(null, user)
       })
-      .catch(function(err) {
-        req.flash('errors', { msg: err });
-        done(null, false, { message: err });
-      });
+      .catch((err) => {
+        req.flash('errors', { msg: err })
+        done(null, false, { message: err })
+      })
   } else {
     UserRepo.createAccFromLinkedIn(accessToken, refreshToken, profile)
-      .then(function(user) { done(null, user); })
-      .catch(function(error) { done(error); });
+      .then((user) => { done(null, user) })
+      .catch((error) => { done(error) })
   }
-}));
+})))
 
 /**
  * Login Required middleware.
  */
-exports.isAuthenticated = function(req, res, next) {
-  if (req.isAuthenticated()) return next();
-  res.redirect('/login');
-};
+exports.isAuthenticated = function (req, res, next) {
+  if (req.isAuthenticated()) return next()
+  res.redirect('/login')
+}
 
 /**
  * Authorization Required middleware.
  */
-exports.isAuthorized = function(req, res, next) {
-  var provider = req.path.split('/').slice(-1)[0];
+exports.isAuthorized = function (req, res, next) {
+  const provider = req.path.split('/').slice(-1)[0]
 
   if (req.user.tokens[provider]) {
-    next();
+    next()
   } else {
-    res.redirect('/auth/' + provider);
+    res.redirect(`/auth/${provider}`)
   }
-};
+}
