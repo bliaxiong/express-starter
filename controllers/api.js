@@ -8,6 +8,9 @@ const cheerio = require('cheerio')
 const Github = require('github-api')
 const LastFmNode = require('lastfm').LastFmNode
 const Twit = require('twit')
+
+const secrets = require('../config/secrets')
+
 const stripe = require('stripe')(secrets.stripe.secretKey)
 const twilio = require('twilio')(secrets.twilio.sid, secrets.twilio.token)
 const Linkedin = require('node-linkedin')(secrets.linkedin.clientID, secrets.linkedin.clientSecret, secrets.linkedin.callbackURL)
@@ -17,7 +20,7 @@ const BitGo = require('bitgo')
 const clockwork = require('clockwork')({ key: secrets.clockwork.apiKey })
 const lob = require('lob')(secrets.lob.apiKey)
 
-const secrets = require('../config/secrets')
+
 
 /**
  * GET /api
@@ -654,7 +657,7 @@ exports.postBitGo = (req, res, next) => {
         },
       )
     })
-  } catch e {
+  } catch (e) {
     req.flash('errors', { msg: e.message })
     return res.redirect('/api/bitgo')
   }

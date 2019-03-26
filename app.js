@@ -8,6 +8,7 @@ const cookieParser = require('cookie-parser')
 const compress = require('compression')
 const favicon = require('serve-favicon')
 const session = require('express-session')
+const MySQLStore = require('express-mysql-session')(session);
 // const pgSession = require('connect-pg-simple')(session)
 
 const bodyParser = require('body-parser')
@@ -19,7 +20,6 @@ const multer = require('multer')
 const ejsEngine = require('ejs-mate')
 const Promise = require('bluebird')
 
-const MySQLStore = require('connect-mysql')({ session })
 const flash = require('express-flash')
 const path = require('path')
 const passport = require('passport')
@@ -83,25 +83,30 @@ const db = require('./models/sequelize')
   MySQL Store Options
   - The db user, password, and db name should be exported to the env
 */
+
+const dbOptions = {
+  host: process.env.DB_HOST,
+  port: process.env.DB_PORT,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASS,
+  database: process.env.DB_NAME
+}
+
+const sessionStore = new MySQLStore(dbOptions);
+
+
 app.use(session({
   resave: false,
-  saveUninitialized: true,
-  secret: secrets.sessionSecret,
-  store: new MySQLStore({
-    // config: secrets.mysql,
-    table: sprocess.env.DB_SESSION_TABLE,
-    cookie: {
-      httpOnly: false,
-      secure: false,
-      maxAge: 1000 * 60 * 60 * 24 * 3,
-      expires: 1000 * 60 * 60 * 24 * 3
-    },
-    user: process.env.DB_USER,
-    password: process.env.DB_PASS,
-    database: process.env.DB_NAME,
-    url: process.env.DB_HOST
-  }),
+  saveUninitialized: false,
+  secret: 'session_cookie_secret',
+  key: 'session_cookie_name',
+  store: sessionStore,
 }))
+
+/**
+ * 
+ * Postgres option
+ */
 
 // PostgreSQL Store
 // app.use(session({
@@ -155,13 +160,13 @@ app.get('/reset/:token', userController.getReset)
 app.post('/reset/:token', userController.postReset)
 app.get('/signup', userController.getSignup)
 app.post('/signup', userController.postSignup)
-app.get('/contact', contactController.getContact)
-app.post('/contact', contactController.postContact)
 app.get('/account', passportConf.isAuthenticated, userController.getAccount)
 app.post('/account/profile', passportConf.isAuthenticated, userController.postUpdateProfile)
 app.post('/account/password', passportConf.isAuthenticated, userController.postUpdatePassword)
 app.delete('/account', passportConf.isAuthenticated, userController.deleteAccount)
 app.get('/account/unlink/:provider', passportConf.isAuthenticated, userController.getOauthUnlink)
+app.get('/contact', contactController.getContact)
+app.post('/contact', contactController.postContact)
 
 /**
  * API examples routes.

@@ -7,7 +7,7 @@
     "url": "https://github.com/yhnavein/express-starter.git"
   },
   "scripts": {
-    "start": "node app.js",
+    "start": "nodemon app.js",
     "test": "NODE_ENV=test mocha",
     "test-ci": "NODE_ENV=test-travis mocha --reporter spec",
     "test-debug": "NODE_ENV=test node_modules/.bin/mocha --debug --debug-brk"
@@ -32,6 +32,7 @@
     "eslint-config-standard": "^12.0.0",
     "express": "4.16.4",
     "express-flash": "0.0.2",
+    "express-mysql-session": "2.1.0",
     "express-session": "1.15.6",
     "express-validator": "5.3.1",
     "fbgraph": "1.4.4",
@@ -45,7 +46,7 @@
     "method-override": "3.0.0",
     "morgan": "1.9.1",
     "multer": "1.4.1",
-    "mysql": "2.16.0",
+    "mysql2": "1.6.5",
     "neo-async": "2.6.0",
     "node-linkedin": "0.5.6",
     "passport": "0.4.0",
@@ -60,7 +61,7 @@
     "pg-hstore": "2.3.2",
     "request": "2.88.0",
     "sendgrid": "5.2.3",
-    "sequelize": "5.1.1",
+    "sequelize": "5.2.0",
     "serve-favicon": "2.5.0",
     "spdy": "4.0.0",
     "stripe": "6.28.0",
@@ -78,6 +79,7 @@
     "expect.js": "0.3.1",
     "jest": "24.5.0",
     "mocha": "6.0.2",
+    "nodemon": "1.18.10",
     "standard": "12.0.1",
     "supertest": "4.0.2"
   },
